@@ -6,7 +6,11 @@ from aws_cdk import (
     aws_sqs as sqs,
     aws_sns as sns,
     aws_sns_subscriptions as subs,
+    aws_lambda as _lambda,
+    aws_apigateway as apigw,
 )
+
+from .hitcounter import HitCounter
 
 
 class AwsCdkProjectStack(Stack):
@@ -24,3 +28,22 @@ class AwsCdkProjectStack(Stack):
         )
 
         topic.add_subscription(subs.SqsSubscription(queue))
+
+        # Defines an AWS Lambda resource
+        my_lambda = _lambda.Function(
+            self, 'HelloHandler',
+            runtime=_lambda.Runtime.PYTHON_3_7,
+            code=_lambda.Code.from_asset('lambda'),
+            handler='hello.handler',
+        )
+
+        hello_with_counter = HitCounter(
+            self, 'HelloHitCounter',
+            downstream=my_lambda,
+        )
+
+        apigw.LambdaRestApi(
+            self, 'Endpoint',
+            handler=hello_with_counter._handler,
+            
+        )
